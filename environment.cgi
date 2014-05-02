@@ -9,7 +9,8 @@ environment.cgi -- Display environment variables seen by cgi script
 =head1 AUDIENCE
 
 This script is intended for web masters who are initially setting up a
-web site. It should be installed on the new site and then deleted after
+web site. It displays the environment variables that are available to a
+script. It should be installed on the new site and then deleted after
 it is run.
 
 =head1 INSTALLATION

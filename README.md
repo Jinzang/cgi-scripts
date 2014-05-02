@@ -6,6 +6,14 @@ Drop and configure CGI Scripts.
 The intent is to provide a set of easy to use and configure cgi scripts that
 are useful for small websites.
 
+environment.cgi
+---------------
+
+This script is intended for web masters who are initially setting up a
+web site. It displays the environment variables that are available to a
+script. It should be installed on the new site and then deleted after
+it is run.
+
 search.cgi
 ----------
 
