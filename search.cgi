@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-search_engine -- Search engine for web sites
+search.cgi -- Search engine for web sites
 
 =head1 AUDIENCE
 
@@ -203,6 +203,7 @@ Bernie Simon (bernie.simon@gmail.com)
 =head1 LICENSE
 
 Copyright Bernard Simon, 2005 & 2014 under the Perl Artistic License.
+
 =cut
 
 package SearchEngine;
@@ -217,6 +218,8 @@ use File::Find;
 use FileHandle;
 use File::Spec::Functions qw(abs2rel catfile rel2abs splitdir);
 use Text::ParseWords;
+
+our $VERSION = '1.00';
 
 #----------------------------------------------------------------------
 # Configuration variables
