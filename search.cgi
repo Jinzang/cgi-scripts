@@ -208,14 +208,15 @@ Copyright Bernard Simon, 2005 & 2014 under the Perl Artistic License.
 package SearchEngine;
 
 use strict;
-use lib '.';
+use warnings;
 
 use CGI qw(:standard);
 use CGI::Carp 'fatalsToBrowser';
-use Text::ParseWords;
-use FileHandle;
-use File::Find;
 use Cwd;
+use File::Find;
+use FileHandle;
+use File::Spec::Functions qw(abs2rel catfile rel2abs splitdir);
+use Text::ParseWords;
 
 #----------------------------------------------------------------------
 # Configuration variables
@@ -292,12 +293,11 @@ sub main {
     
     $query = scrub_parameter($query);
     $start = scrub_parameter($start);
-    
-    
+        
     # Set configuration variables if left empty
     
     my $base_directory = BASE_DIRECTORY || cwd();
-    my $base_url = BASE_URL || $ENV{SCRIPT_URI};
+    my $base_url = BASE_URL || $ENV{SCRIPT_URI} || '';
     $base_url =~ s!/[^/]*$!!;
     
     # Perform the search and put results into an array
@@ -308,9 +308,11 @@ sub main {
     # Add extra info used in the output page
     
     $hash->{query} = $query;
-    $hash->{base_url} = "$base_url/";
-    $hash->{script_url} = $ENV{SCRIPT_URI} || "$base_url/$0";
     $hash->{query_param} = QUERY_PARAM;
+
+    $hash->{base_url} = "$base_url/";
+    $hash->{script_url} = $ENV{SCRIPT_URI} ||
+                          build_url($base_url, $base_directory, $0);
     
     # Build navigation links 
     
@@ -340,9 +342,10 @@ sub main {
 sub build_url {
     my ($base_url, $base_directory, $filename) = @_;
 
-    $base_directory =~ s!([^/])$!$1/!;
-    $filename = substr ($filename, length ($base_directory));
-    return "$base_url/$filename";
+    $filename = abs2rel($filename, $base_directory);
+    my @path = splitdir($filename);
+
+    return return join('/', $base_url, @path);
 }
 
 #----------------------------------------------------------------------
@@ -368,7 +371,7 @@ EOQ
 
     my $code = join("\n", $start, @mid, $end);
     my $sub = eval ($code);
-    croak $@ unless $sub;
+    die $@ unless $sub;
 
     return $sub;
 }
@@ -548,9 +551,9 @@ sub parse_code {
             
             if (substr($cmd, 0, 3) eq 'end') {
                 my $startcmd = substr($cmd, 3);
-                croak "Mismatched block end ($command/$cmd)"
+                die "Mismatched block end ($command/$cmd)"
                       if defined $startcmd && $startcmd ne $command;
-                last;
+                return @code;
 
             } elsif (COMMANDS->{"end$cmd"}) {
                 push(@code, parse_code($lines, $cmd));
@@ -562,7 +565,9 @@ sub parse_code {
         }
     }
 
+    die "Missing end (end$command)" if $command;
     push(@code, '$text .= <<"EOQ";', @stash, 'EOQ') if @stash;
+
     return @code;
 }
 
@@ -576,7 +581,8 @@ sub parse_command {
 
     $line =~ s/\s*-->//;
     my ($cmd, $arg) = split(' ', $line, 2);
-
+    $arg = '' unless defined $arg;
+    
     my $cmdline = COMMANDS->{$cmd};
     return unless $cmdline;
     
