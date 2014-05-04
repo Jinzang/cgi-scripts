@@ -14,7 +14,7 @@ script. It should be installed on the new site and then deleted after
 it is run.
 
 =head1 INSTALLATION
-s
+
 Before installing the script, you should find out from your ISP what
 extension should be used for a Perl cgi script and what is the
 location of Perl on your ISP's system. This information will probably
