@@ -108,7 +108,7 @@ use Cwd;
 use English;
 use FileHandle;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 #----------------------------------------------------------------------
 # Configuration variables
@@ -158,27 +158,52 @@ sub main {
 
     $hash->{vars} = \@vars;
     
-    # Generate output page and print it
+    # Figure out which templates we have, put them in a list
     
-    my $text = slurp(SEARCH_TEMPLATE) || slurp(\*DATA);
-    my $sub = compile_code($text);
-    my $output = &$sub($hash);
+    my @templates;
+    push(@templates, SITE_TEMPLATE) if SITE_TEMPLATE;
     
-    if (SITE_TEMPLATE) {
-        my $section = parse_sections($output);
-        my $text = slurp(SITE_TEMPLATE);
-        $output = substitute_sections ($text, $section);
+    if (SEARCH_TEMPLATE) {
+        push(@templates, SEARCH_TEMPLATE);
+    } else {
+        push(@templates, \*DATA);
     }
-    
+
+    # Generate output page and print it
+
+    my $sub = compile_code(@templates);
+    my $output = &$sub($hash);
+        
     print "Content-type: text/html\n\n";
     print $output;
     return;
 }
 
 #----------------------------------------------------------------------
-# Compile a subroutine from the code embedded in the template
+# Compile a template into a subroutine which when called fills itself
 
 sub compile_code {
+    my (@templates) = @_;
+
+    # Template precedes subtemplate, which precedes subsubtemplate
+
+    my $text;
+    my $section = {};
+    while (my $template = pop(@templates)) {
+        # If a template contains a newline, it is a string,
+        # if not, it is a filename
+
+        $text = slurp($template);
+        $text = substitute_sections($text, $section);
+    }
+
+    return construct_code($text);
+}
+
+#----------------------------------------------------------------------
+# Compile a subroutine from the code embedded in the template
+
+sub construct_code {
     my ($text) = @_;
 
     my @lines = split(/\n/, $text);    
@@ -267,41 +292,6 @@ sub parse_command {
 }
 
 #----------------------------------------------------------------------
-# Extract sections from file, store in hash
-
-sub parse_sections {
-    my ($text) = @_;
-
-    my $name;
-    my %section;
-
-    # Extract sections from input
-
-    my @tokens = split (/(<!--\s*(?:section|endsection)\s+.*?-->)/, $text);
-
-    foreach my $token (@tokens) {
-        if ($token =~ /^<!--\s*section\s+(\w+).*?-->/) {
-            if (defined $name) {
-                die "Nested sections in input: $token\n";
-            }
-            $name = $1;
-    
-        } elsif ($token =~ /^<!--\s*endsection\s+(\w+).*?-->/) {
-            if ($name ne $1) {
-                die "Nested sections in input: $token\n";
-            }
-            undef $name;
-    
-        } elsif (defined $name) {
-            $section{$name} = $token;
-        }
-    }
-    
-    die "Unmatched section (<!-- section $name -->)\n" if $name;
-    return \%section;
-}
-
-#----------------------------------------------------------------------
 # Read a file into a string
 
 sub slurp {
@@ -354,7 +344,6 @@ sub substitute_sections {
         } elsif (defined $name) {
             $section->{$name} ||= $token;
             push(@output, $section->{$name});
-            delete $section->{$name};
             
         } else {
             push(@output, $token);
