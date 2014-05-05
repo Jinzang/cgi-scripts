@@ -219,7 +219,7 @@ use FileHandle;
 use File::Spec::Functions qw(abs2rel catfile rel2abs splitdir);
 use Text::ParseWords;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 #----------------------------------------------------------------------
 # Configuration variables
@@ -741,7 +741,6 @@ sub substitute_sections {
         } elsif (defined $name) {
             $section->{$name} ||= $token;
             push(@output, $section->{$name});
-            delete $section->{$name};
             
         } else {
             push(@output, $token);
