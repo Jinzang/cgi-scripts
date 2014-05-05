@@ -220,7 +220,7 @@ sub parse_code {
                 push(@code, '$text .= <<"EOQ";', @stash, 'EOQ');
                 @stash = ();
             }
-            push(@code, "$cmdline");
+            push(@code, $cmdline);
             
             if (substr($cmd, 0, 3) eq 'end') {
                 my $startcmd = substr($cmd, 3);
@@ -352,7 +352,8 @@ sub substitute_sections {
             push(@output, $token);
     
         } elsif (defined $name) {
-            push(@output, $section->{$name} || '');
+            $section->{$name} ||= $token;
+            push(@output, $section->{$name});
             delete $section->{$name};
             
         } else {
@@ -360,9 +361,6 @@ sub substitute_sections {
         }
     }
 
-    my @keys = sort keys %$section;
-    die "Unused sections: " . join(',', @keys) if @keys;
-    
     return join('', @output);
 }
 

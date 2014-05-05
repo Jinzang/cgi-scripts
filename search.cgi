@@ -739,16 +739,14 @@ sub substitute_sections {
             push(@output, $token);
     
         } elsif (defined $name) {
-            push(@output, $section->{$name} || $token);
+            $section->{$name} ||= $token;
+            push(@output, $section->{$name});
             delete $section->{$name};
             
         } else {
             push(@output, $token);
         }
     }
-
-    my @keys = sort keys %$section;
-    die "Unused sections: " . join(',', @keys) if @keys;
     
     return join('', @output);
 }
